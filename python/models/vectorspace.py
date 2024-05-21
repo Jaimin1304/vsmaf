@@ -1,3 +1,15 @@
+import math
+
+
+class Dimension:
+    def __init__(self, name, weight=1.0):
+        self.name = name
+        self.weight = weight
+
+    def __repr__(self):
+        return f"Dimension(name={self.name}, weight={self.weight})"
+
+
 class VectorSpace:
     def __init__(self, dimensions, dimension_names=None):
         self.dimensions = dimensions

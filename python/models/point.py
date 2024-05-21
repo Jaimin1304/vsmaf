@@ -1,3 +1,7 @@
+import math
+import uuid
+
+
 class Point:
     def __init__(self, name=None, coordinates=None):
         self.id = self.generate_unique_id()
