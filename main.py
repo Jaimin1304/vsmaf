@@ -3,6 +3,7 @@ import math
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans
 import vispy
 
 vispy.use("pyqt6")
@@ -12,11 +13,12 @@ from vispy.scene import visuals
 
 
 class Point:
-    def __init__(self, name=None, coordinates=None):
+    def __init__(self, name=None, coordinates=None, labels={}):
         self.id = self.generate_unique_id()
         self.name = name if name else f"Point_{self.id}"
         self.coordinates = coordinates if coordinates else []
         self.length = self.calculate_length()
+        self.labels = labels
 
     def generate_unique_id(self):
         return str(uuid.uuid4())
@@ -186,6 +188,27 @@ class VectorSpace:
         transformed_data = tsne.fit_transform(data)
         return transformed_data
 
+    def perform_kmeans(self, n_clusters):
+        """
+        Perform K-means clustering on the points in the vector space.
+        Parameters:
+        n_clusters (int): The number of clusters to form.
+        Returns:
+        list: A list of cluster labels for each point.
+        """
+        if n_clusters <= 0:
+            raise ValueError("Number of clusters must be a positive integer.")
+        # Collect coordinates of all points
+        data = np.array([point.coordinates for point in self.points.values()])
+        # Perform K-means clustering
+        kmeans = KMeans(n_clusters=n_clusters)
+        kmeans.fit(data)
+        labels = kmeans.labels_
+        # Assign cluster labels to points
+        for point, label in zip(self.points.values(), labels):
+            point.labels["keans_clusters"] = label
+        return labels
+
     def visualize_2d(self, dimension_indices=None):
         """
         Visualize the points in 2D space using the specified dimensions.
@@ -237,6 +260,9 @@ class VectorSpace:
             raise ValueError("Dimension index out of range.")
         fig = plt.figure()
         ax = fig.add_subplot(111, projection="3d")
+        # 绘制原点
+        ax.scatter(0, 0, 0, color="blue", s=100, label="Origin")  # 原点用蓝色大点表示
+        ax.text(0, 0, 0, "Origin", color="blue", fontsize=12, ha="right")
         for point in self.points.values():
             ax.scatter(
                 point.coordinates[dimension_indices[0]],
