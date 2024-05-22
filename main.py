@@ -1,4 +1,5 @@
 import uuid
+import copy
 import math
 import numpy as np
 from sklearn.decomposition import PCA
@@ -145,13 +146,14 @@ class VectorSpace:
                 filtered_points.append(point)
         return filtered_points
 
-    def pca_transform(self, n_components):
+    def pca_transform(self, n_components, return_space=False):
         """
-        Perform PCA on the points in the vector space and return the transformed coordinates.
+        Perform PCA on the points in the vector space and return the transformed coordinates or a new low-dimensional VectorSpace.
         Parameters:
         n_components (int): Number of dimensions to reduce to.
+        return_space (bool): Whether to return a new low-dimensional VectorSpace. Default is False.
         Returns:
-        np.ndarray: Transformed coordinates.
+        np.ndarray or VectorSpace: Transformed coordinates or a new low-dimensional VectorSpace.
         """
         if n_components > len(self.dimensions):
             raise ValueError(
@@ -162,17 +164,32 @@ class VectorSpace:
         # Perform PCA
         pca = PCA(n_components=n_components)
         transformed_data = pca.fit_transform(data)
-        return transformed_data
+        if not return_space:
+            return transformed_data
+        # Create new dimensions with random names and weight 1.0 for the low-dimensional VectorSpace
+        new_dimensions = [
+            Dimension(name=f"Dim_{i+1}", weight=1.0) for i in range(n_components)
+        ]
+        new_space = VectorSpace(new_dimensions)
+        # Add transformed points to the new VectorSpace
+        for point, new_coords in zip(self.points.values(), transformed_data):
+            new_point = Point(name=point.name, coordinates=list(new_coords))
+            new_point.id = point.id  # Retain the original ID
+            new_space.add_point(new_point)
+        return new_space
 
-    def tsne_transform(self, n_components=2, perplexity=2.0, max_iter=1000):
+    def tsne_transform(
+        self, n_components=2, perplexity=2.0, max_iter=1000, return_space=False
+    ):
         """
-        Perform t-SNE on the points in the vector space and return the transformed coordinates.
+        Perform t-SNE on the points in the vector space and return the transformed coordinates or a new low-dimensional VectorSpace.
         Parameters:
         n_components (int): Number of dimensions to reduce to.
         perplexity (float): The perplexity parameter for t-SNE.
         max_iter (int): The number of iterations for optimization.
+        return_space (bool): Whether to return a new low-dimensional VectorSpace. Default is False.
         Returns:
-        np.ndarray: Transformed coordinates.
+        np.ndarray or VectorSpace: Transformed coordinates or a new low-dimensional VectorSpace.
         """
         if n_components > len(self.dimensions):
             raise ValueError(
@@ -181,12 +198,23 @@ class VectorSpace:
         # Collect coordinates of all points
         data = np.array([point.coordinates for point in self.points.values()])
         if perplexity >= len(data):
-            print(data)
             raise ValueError("perplexity must be less than the number of samples!")
         # Perform t-SNE
         tsne = TSNE(n_components=n_components, perplexity=perplexity, max_iter=max_iter)
         transformed_data = tsne.fit_transform(data)
-        return transformed_data
+        if not return_space:
+            return transformed_data
+        # Create new dimensions with random names and weight 1.0 for the low-dimensional VectorSpace
+        new_dimensions = [
+            Dimension(name=f"Dim_{i+1}", weight=1.0) for i in range(n_components)
+        ]
+        new_space = VectorSpace(new_dimensions)
+        # Add transformed points to the new VectorSpace
+        for point, new_coords in zip(self.points.values(), transformed_data):
+            new_point = Point(name=point.name, coordinates=list(new_coords))
+            new_point.id = point.id  # Retain the original ID
+            new_space.add_point(new_point)
+        return new_space
 
     def perform_kmeans(self, n_clusters):
         """
@@ -482,17 +510,15 @@ def main():
     # 按照维度 "Y" 进行升序排序
     sorted_points = vector_space.sort_points_by_dimension("Y", ascending=True)
     print(f"Points sorted by dimension 'Y' (ascending): {sorted_points}")
-    # 打印 VectorSpace 以验证
-    print(vector_space)
     # Perform PCA
-    pca_result = vector_space.pca_transform(n_components=2)
-    print("PCA Result:")
+    pca_result = vector_space.pca_transform(n_components=2, return_space=True)
+    print("PCA Result as VectorSpace:")
     print(pca_result)
     # Perform t-SNE
     tsne_result = vector_space.tsne_transform(
-        n_components=2, perplexity=2
-    )  # 确保perplexity小于样本数
-    print("t-SNE Result:")
+        n_components=2, perplexity=2, return_space=True
+    )
+    print("t-SNE Result as VectorSpace:")
     print(tsne_result)
     # 使用区间筛选点
     ranges = [[0, 5], [1, 6], [2, math.inf]]
@@ -502,6 +528,17 @@ def main():
     vector_space.visualize_3d()
     # 可视化 2D
     vector_space.visualize_2d()
+    # Perform K-means clustering with PCA
+    n_clusters = 2
+    kmeans_labels = vector_space.perform_kmeans(n_clusters)
+    print(f"K-means clustering result with {n_clusters} clusters: {kmeans_labels}")
+    # Perform DBSCAN clustering
+    eps = 1.0
+    min_samples = 2
+    dbscan_labels = vector_space.perform_dbscan(eps=eps, min_samples=min_samples)
+    print(
+        f"DBSCAN clustering result with eps={eps} and min_samples={min_samples}: {dbscan_labels}"
+    )
     # 移除一个 Point
     vector_space.remove_point(point1.id)
     print("----- end main -----")
