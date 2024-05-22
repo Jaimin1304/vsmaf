@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import vispy
+
 vispy.use("pyqt6")
 import matplotlib.pyplot as plt
 from vispy import scene
@@ -105,6 +106,42 @@ class VectorSpace:
             reverse=not ascending,
         )
         return sorted_points
+
+    def filter_points_by_ranges(self, ranges):
+        """
+        Filter points based on the specified ranges for each dimension.
+        Parameters:
+        ranges (list of list of float): A nested list where each inner list contains two floats
+                                        representing the interval [min, max] for the corresponding dimension.
+        Returns:
+        list of Point: The points that fall within the specified ranges for all dimensions.
+        """
+        # 检查 ranges 的长度是否与 dimensions 的数量一致
+        if len(ranges) != len(self.dimensions):
+            raise ValueError(
+                "The size of ranges must match the number of dimensions in the VectorSpace."
+            )
+        # 检查每个区间是否有效
+        for range_ in ranges:
+            if len(range_) != 2:
+                raise ValueError(
+                    "Each range must be a list of two elements representing [min, max]."
+                )
+            min_val, max_val = range_
+            if min_val > max_val:
+                raise ValueError(
+                    f"Invalid range: [{min_val}, {max_val}]. Min value cannot be greater than max value."
+                )
+        filtered_points = []
+        for point in self.points.values():
+            include_point = True
+            for dim_index, (min_val, max_val) in enumerate(ranges):
+                if not (min_val <= point.coordinates[dim_index] <= max_val):
+                    include_point = False
+                    break
+            if include_point:
+                filtered_points.append(point)
+        return filtered_points
 
     def pca_transform(self, n_components):
         """
@@ -411,6 +448,10 @@ def main():
     )  # 确保perplexity小于样本数
     print("t-SNE Result:")
     print(tsne_result)
+    # 使用区间筛选点
+    ranges = [[0, 5], [1, 6], [2, math.inf]]
+    filtered_points = vector_space.filter_points_by_ranges(ranges)
+    print(f"Filtered points within ranges {ranges}: {filtered_points}")
     # 可视化 3D
     vector_space.visualize_3d()
     # 可视化 2D
