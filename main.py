@@ -3,7 +3,7 @@ import math
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN
 import vispy
 
 vispy.use("pyqt6")
@@ -207,6 +207,26 @@ class VectorSpace:
         # Assign cluster labels to points
         for point, label in zip(self.points.values(), labels):
             point.labels["keans_clusters"] = label
+        return labels
+
+    def perform_dbscan(self, eps=0.5, min_samples=5):
+        """
+        Perform DBSCAN clustering on the points in the vector space.
+        Parameters:
+        eps (float): The maximum distance between two samples for one to be considered as in the neighborhood of the other.
+        min_samples (int): The number of samples in a neighborhood for a point to be considered as a core point.
+        Returns:
+        list: A list of cluster labels for each point.
+        """
+        # Collect coordinates of all points
+        data = np.array([point.coordinates for point in self.points.values()])
+        # Perform DBSCAN clustering
+        dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+        dbscan.fit(data)
+        labels = dbscan.labels_
+        # Assign cluster labels to points
+        for point, label in zip(self.points.values(), labels):
+            point.labels["dbscan_clusters"] = label
         return labels
 
     def visualize_2d(self, dimension_indices=None):
