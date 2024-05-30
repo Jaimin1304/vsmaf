@@ -1,5 +1,4 @@
 import uuid
-import copy
 import math
 import numpy as np
 from sklearn.decomposition import PCA
