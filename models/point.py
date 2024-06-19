@@ -16,5 +16,21 @@ class Point:
     def calculate_length(self):
         return math.sqrt(sum(coord**2 for coord in self.coordinates))
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "coordinates": [float(coord) for coord in self.coordinates],
+            "labels": self.labels,
+        }
+
+    @staticmethod
+    def from_dict(data):
+        point = Point(
+            name=data["name"], coordinates=data["coordinates"], labels=data["labels"]
+        )
+        point.id = data["id"]
+        return point
+
     def __repr__(self):
         return f"{self.name}(id={self.id}, coordinates={self.coordinates}, length={self.length})"

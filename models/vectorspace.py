@@ -4,20 +4,14 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans, DBSCAN
 import vispy
+import json
+from models.dimension import Dimension
+from models.point import Point
 
 vispy.use("pyqt6")
 import matplotlib.pyplot as plt
 from vispy import scene
 from vispy.scene import visuals
-
-
-class Dimension:
-    def __init__(self, name, weight=1.0):
-        self.name = name
-        self.weight = weight
-
-    def __repr__(self):
-        return f"Dimension(name={self.name}, weight={self.weight})"
 
 
 class VectorSpace:
@@ -211,7 +205,8 @@ class VectorSpace:
         # Perform K-means clustering
         kmeans = KMeans(n_clusters=n_clusters)
         kmeans.fit(data)
-        labels = kmeans.labels_
+        # labels = kmeans.labels_
+        labels = [int(label) for label in kmeans.labels_]
         # Assign cluster labels to points
         for point, label in zip(self.points.values(), labels):
             point.labels["keans_clusters"] = label
@@ -231,7 +226,8 @@ class VectorSpace:
         # Perform DBSCAN clustering
         dbscan = DBSCAN(eps=eps, min_samples=min_samples)
         dbscan.fit(data)
-        labels = dbscan.labels_
+        # labels = dbscan.labels_
+        labels = [int(label) for label in dbscan.labels_]
         # Assign cluster labels to points
         for point, label in zip(self.points.values(), labels):
             point.labels["dbscan_clusters"] = label
@@ -370,6 +366,25 @@ class VectorSpace:
             text.pos = np.array(pos) * 1.1  # 让标签稍微远离原点
             view.add(text)
         canvas.app.run()
+
+    def to_json(self, filepath):
+        data = {
+            "dimensions": [dim.to_dict() for dim in self.dimensions],
+            "points": [point.to_dict() for point in self.points.values()],
+        }
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=2)
+
+    @staticmethod
+    def from_json(filepath):
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        dimensions = [Dimension.from_dict(dim_data) for dim_data in data["dimensions"]]
+        vector_space = VectorSpace(dimensions)
+        for point_data in data["points"]:
+            point = Point.from_dict(point_data)
+            vector_space.add_point(point)
+        return vector_space
 
     def __repr__(self):
         return f"VectorSpace(dimensions={self.dimensions}, points={list(self.points.values())})"

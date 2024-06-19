@@ -1,5 +1,6 @@
 import uuid
 import math
+import json
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -26,6 +27,22 @@ class Point:
     def calculate_length(self):
         return math.sqrt(sum(coord**2 for coord in self.coordinates))
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "coordinates": [float(coord) for coord in self.coordinates],
+            "labels": self.labels,
+        }
+
+    @staticmethod
+    def from_dict(data):
+        point = Point(
+            name=data["name"], coordinates=data["coordinates"], labels=data["labels"]
+        )
+        point.id = data["id"]
+        return point
+
     def __repr__(self):
         return f"{self.name}(id={self.id}, coordinates={self.coordinates}, length={self.length})"
 
@@ -34,6 +51,13 @@ class Dimension:
     def __init__(self, name, weight=1.0):
         self.name = name
         self.weight = weight
+
+    def to_dict(self):
+        return {"name": self.name, "weight": self.weight}
+
+    @staticmethod
+    def from_dict(data):
+        return Dimension(name=data["name"], weight=data["weight"])
 
     def __repr__(self):
         return f"Dimension(name={self.name}, weight={self.weight})"
@@ -230,7 +254,8 @@ class VectorSpace:
         # Perform K-means clustering
         kmeans = KMeans(n_clusters=n_clusters)
         kmeans.fit(data)
-        labels = kmeans.labels_
+        #labels = kmeans.labels_
+        labels = [int(label) for label in kmeans.labels_]
         # Assign cluster labels to points
         for point, label in zip(self.points.values(), labels):
             point.labels["keans_clusters"] = label
@@ -250,7 +275,8 @@ class VectorSpace:
         # Perform DBSCAN clustering
         dbscan = DBSCAN(eps=eps, min_samples=min_samples)
         dbscan.fit(data)
-        labels = dbscan.labels_
+        # labels = dbscan.labels_
+        labels = [int(label) for label in dbscan.labels_]
         # Assign cluster labels to points
         for point, label in zip(self.points.values(), labels):
             point.labels["dbscan_clusters"] = label
@@ -389,6 +415,25 @@ class VectorSpace:
             text.pos = np.array(pos) * 1.1  # 让标签稍微远离原点
             view.add(text)
         canvas.app.run()
+
+    def to_json(self, filepath):
+        data = {
+            "dimensions": [dim.to_dict() for dim in self.dimensions],
+            "points": [point.to_dict() for point in self.points.values()],
+        }
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=2)
+
+    @staticmethod
+    def from_json(filepath):
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        dimensions = [Dimension.from_dict(dim_data) for dim_data in data["dimensions"]]
+        vector_space = VectorSpace(dimensions)
+        for point_data in data["points"]:
+            point = Point.from_dict(point_data)
+            vector_space.add_point(point)
+        return vector_space
 
     def __repr__(self):
         return f"VectorSpace(dimensions={self.dimensions}, points={list(self.points.values())})"
@@ -540,6 +585,11 @@ def main():
     )
     # 移除一个 Point
     vector_space.remove_point(point1.id)
+    # 序列化和反序列化
+    vector_space.to_json("vector_space.json")
+    restored_vector_space = VectorSpace.from_json("vector_space.json")
+    print("Restored VectorSpace from JSON:")
+    print(restored_vector_space)
     print("----- end main -----")
 
 
