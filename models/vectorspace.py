@@ -8,8 +8,8 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
-from dimension import Dimension
-from point import Point
+from .point import Point
+from .dimension import Dimension
 
 vispy.use("pyqt6")
 
@@ -209,7 +209,7 @@ class VectorSpace:
         labels = [int(label) for label in kmeans.labels_]
         # Assign cluster labels to points
         for point, label in zip(self.points.values(), labels):
-            point.labels["keans_clusters"] = label
+            point.labels["kmeans_clusters"] = label
         return labels
 
     def perform_dbscan(self, eps=0.5, min_samples=5):

@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from vispy import scene
 from vispy.scene import visuals
+from collections import defaultdict
 
 
 def visualize_2d(vector_space, dimension_indices=None):
@@ -82,12 +83,15 @@ def visualize_3d(vector_space, dimension_indices=None):
     plt.show()
 
 
-def visualize_3d_vispy(vector_space, dimension_indices=None):
+def visualize_3d_vispy(
+    vector_space, dimension_indices=None, cluster_key="kmeans_clusters"
+):
     """
     Visualize the points in 3D space using the specified dimensions with GPU acceleration.
     Parameters:
     vector_space (VectorSpace): The VectorSpace instance to visualize.
     dimension_indices (list of int): Indices of the dimensions to visualize. Default is the first three dimensions.
+    cluster_key (str): The key in the labels to determine the cluster of each point. Default is 'kmeans_clusters'.
     """
     if dimension_indices is None:
         dimension_indices = [0, 1, 2]
@@ -95,27 +99,44 @@ def visualize_3d_vispy(vector_space, dimension_indices=None):
         raise ValueError("Three dimensions must be specified for 3D visualization.")
     if any(index >= len(vector_space.dimensions) for index in dimension_indices):
         raise ValueError("Dimension index out of range.")
+
     # 创建一个场景画布
     canvas = scene.SceneCanvas(keys="interactive", show=True, bgcolor="white")
     view = canvas.central_widget.add_view()
     view.camera = "turntable"  # 设置相机类型
-    # 创建散点并赋予随机颜色
+
+    # 创建散点并赋予颜色
     scatter = visuals.Markers()
-    points = np.array([point.coordinates for point in vector_space.points.values()])
-    colors = np.random.rand(len(points), 3)  # 生成随机颜色
+    point_lst = list(vector_space.points.values())
+    points = np.array([point.coordinates for point in point_lst])
+
+    # 生成颜色字典，每个类一个颜色
+    color_map = defaultdict(lambda: np.random.rand(3))
+
+    # 生成每个点的颜色
+    colors = np.array(
+        [
+            color_map[point.labels.get(cluster_key, np.random.randint(0, 10000))]
+            for point in point_lst
+        ]
+    )
+
     scatter.set_data(
-        points[:, dimension_indices], edge_color=colors, face_color=colors, size=8
+        points[:, dimension_indices], edge_color=colors, face_color=colors, size=10
     )
     view.add(scatter)
+
     # 添加坐标轴
     axis = visuals.XYZAxis(parent=view.scene)
     # 添加标尺
     grid = visuals.GridLines()
     view.add(grid)
+
     # 显示原点
     origin = visuals.Markers()
-    origin.set_data(np.array([[0, 0, 0]]), face_color="blue", size=10)
+    origin.set_data(np.array([[0, 0, 0]]), face_color="blue", size=16)
     view.add(origin)
+
     # 为坐标轴添加标签
     axis_labels = {
         vector_space.dimensions[dimension_indices[0]].name: (1, 0, 0),
@@ -134,24 +155,19 @@ def visualize_3d_vispy(vector_space, dimension_indices=None):
         text.pos = np.array(pos) * 1.1  # 让标签稍微远离原点
         view.add(text)
 
-    # 添加鼠标悬停事件处理器
-    def on_mouse_move(event):
-        if event.pos is None:
-            return
-        tr = scatter.get_transform("canvas", "visual")
-        mouse_pos = tr.map(event.pos)[:3]
-        min_dist = float("inf")
-        nearest_point = None
-        for i, point in enumerate(points[:, dimension_indices]):
-            dist = np.linalg.norm(mouse_pos - point)
-            if dist < min_dist:
-                min_dist = dist
-                nearest_point = i
-        if nearest_point is not None:
-            point_coords = points[nearest_point, dimension_indices]
-            print(f"Mouse over: {point_coords}")
+    # 在每个点旁边显示文本标签并稍微向上移动
+    for i, point in enumerate(points[:, dimension_indices]):
+        point_label = visuals.Text(
+            text=point_lst[i].id,
+            color=colors[i],
+            anchor_x="center",
+            anchor_y="center",
+            font_size=10,
+            bold=True,
+        )
+        point_label.pos = point + np.array([0, 0.01, 0])  # 向上移动一点
+        view.add(point_label)
 
-    canvas.events.mouse_move.connect(on_mouse_move)
     canvas.app.run()
 
 
