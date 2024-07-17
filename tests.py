@@ -1,9 +1,10 @@
 from models.point import Point
 from models.vectorspace import Dimension, VectorSpace
+import math
 
 
 def test():
-    print("----- start main -----")
+    print("----- start test -----")
     # 创建一些 Dimension 实例
     dimension_x = Dimension(name="X", weight=1.0)
     dimension_y = Dimension(name="Y", weight=1.0)
@@ -31,21 +32,43 @@ def test():
     # 按照维度 "Y" 进行升序排序
     sorted_points = vector_space.sort_points_by_dimension("Y", ascending=True)
     print(f"Points sorted by dimension 'Y' (ascending): {sorted_points}")
-    # 移除一个 Point
-    vector_space.remove_point(point1.id)
-    # 打印 VectorSpace 以验证
-    print(vector_space)
     # Perform PCA
-    pca_result = vector_space.pca_transform(n_components=2)
-    print("PCA Result:")
+    pca_result = vector_space.pca_transform(n_components=2, return_space=True)
+    print("PCA Result as VectorSpace:")
     print(pca_result)
     # Perform t-SNE
     tsne_result = vector_space.tsne_transform(
-        n_components=2, perplexity=2
-    )  # 确保perplexity小于样本数
-    print("t-SNE Result:")
+        n_components=2, perplexity=2, return_space=True
+    )
+    print("t-SNE Result as VectorSpace:")
     print(tsne_result)
-    print("----- end main -----")
+    # 使用区间筛选点
+    ranges = [[0, 5], [1, 6], [2, math.inf]]
+    filtered_points = vector_space.filter_points_by_ranges(ranges)
+    print(f"Filtered points within ranges {ranges}: {filtered_points}")
+    # 可视化 3D
+    vector_space.visualize_3d()
+    # 可视化 2D
+    vector_space.visualize_2d()
+    # Perform K-means clustering with PCA
+    n_clusters = 2
+    kmeans_labels = vector_space.perform_kmeans(n_clusters)
+    print(f"K-means clustering result with {n_clusters} clusters: {kmeans_labels}")
+    # Perform DBSCAN clustering
+    eps = 1.0
+    min_samples = 2
+    dbscan_labels = vector_space.perform_dbscan(eps=eps, min_samples=min_samples)
+    print(
+        f"DBSCAN clustering result with eps={eps} and min_samples={min_samples}: {dbscan_labels}"
+    )
+    # 移除一个 Point
+    vector_space.remove_point(point1.id)
+    # 序列化和反序列化
+    vector_space.to_json("vector_space.json")
+    restored_vector_space = VectorSpace.from_json("vector_space.json")
+    print("Restored VectorSpace from JSON:")
+    print(restored_vector_space)
+    print("----- end test -----")
 
 
 if __name__ == "__main__":
