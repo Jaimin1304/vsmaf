@@ -153,3 +153,7 @@ def visualize_3d_vispy(vector_space, dimension_indices=None):
 
     canvas.events.mouse_move.connect(on_mouse_move)
     canvas.app.run()
+
+
+if __name__ == "__main__":
+    print("visualization start")

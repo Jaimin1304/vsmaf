@@ -1,17 +1,17 @@
+import csv
+import uuid
 import math
+import json
+import vispy
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans, DBSCAN
-import vispy
-import json
-from models.dimension import Dimension
-from models.point import Point
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
+from dimension import Dimension
+from point import Point
 
 vispy.use("pyqt6")
-import matplotlib.pyplot as plt
-from vispy import scene
-from vispy.scene import visuals
 
 
 class VectorSpace:
@@ -233,140 +233,6 @@ class VectorSpace:
             point.labels["dbscan_clusters"] = label
         return labels
 
-    def visualize_2d(self, dimension_indices=None):
-        """
-        Visualize the points in 2D space using the specified dimensions.
-        Parameters:
-        dimension_indices (list of int): Indices of the dimensions to visualize. Default is the first two dimensions.
-        """
-        if dimension_indices is None:
-            dimension_indices = [0, 1]
-        if len(dimension_indices) != 2:
-            raise ValueError("Two dimensions must be specified for 2D visualization.")
-        if any(index >= len(self.dimensions) for index in dimension_indices):
-            raise ValueError("Dimension index out of range.")
-        fig, ax = plt.subplots()
-        # 绘制原点
-        ax.scatter(0, 0, color="blue", s=100)  # 原点用蓝色大点表示
-        ax.text(0, 0, "Origin", color="blue", fontsize=12, ha="right")
-        for point in self.points.values():
-            ax.scatter(
-                point.coordinates[dimension_indices[0]],
-                point.coordinates[dimension_indices[1]],
-                label=point.name,
-            )
-            ax.text(
-                point.coordinates[dimension_indices[0]],
-                point.coordinates[dimension_indices[1]],
-                point.name,
-                fontsize=9,
-                ha="right",
-            )
-        ax.set_xlabel(self.dimensions[dimension_indices[0]].name)
-        ax.set_ylabel(self.dimensions[dimension_indices[1]].name)
-        ax.axhline(0, color="black", linewidth=0.5)
-        ax.axvline(0, color="black", linewidth=0.5)
-        ax.grid(color="gray", linestyle="--", linewidth=0.5)
-        plt.legend()
-        plt.show()
-
-    def visualize_3d(self, dimension_indices=None):
-        """
-        Visualize the points in 3D space using the specified dimensions.
-        Parameters:
-        dimension_indices (list of int): Indices of the dimensions to visualize. Default is the first three dimensions.
-        """
-        if dimension_indices is None:
-            dimension_indices = [0, 1, 2]
-        if len(dimension_indices) != 3:
-            raise ValueError("Three dimensions must be specified for 3D visualization.")
-        if any(index >= len(self.dimensions) for index in dimension_indices):
-            raise ValueError("Dimension index out of range.")
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection="3d")
-        # 绘制原点
-        ax.scatter(0, 0, 0, color="blue", s=100, label="Origin")  # 原点用蓝色大点表示
-        ax.text(0, 0, 0, "Origin", color="blue", fontsize=12, ha="right")
-        for point in self.points.values():
-            ax.scatter(
-                point.coordinates[dimension_indices[0]],
-                point.coordinates[dimension_indices[1]],
-                point.coordinates[dimension_indices[2]],
-                label=point.name,
-            )
-            ax.text(
-                point.coordinates[dimension_indices[0]],
-                point.coordinates[dimension_indices[1]],
-                point.coordinates[dimension_indices[2]],
-                point.name,
-            )
-        ax.set_xlabel(self.dimensions[dimension_indices[0]].name)
-        ax.set_ylabel(self.dimensions[dimension_indices[1]].name)
-        ax.set_zlabel(self.dimensions[dimension_indices[2]].name)
-        plt.legend()
-        plt.show()
-
-    def visualize_3d_vispy(self, dimension_indices=None):
-        """
-        Visualize the points in 3D space using the specified dimensions with GPU acceleration.
-        Parameters:
-        dimension_indices (list of int): Indices of the dimensions to visualize. Default is the first three dimensions.
-        """
-        if dimension_indices is None:
-            dimension_indices = [0, 1, 2]
-        if len(dimension_indices) != 3:
-            raise ValueError("Three dimensions must be specified for 3D visualization.")
-        if any(index >= len(self.dimensions) for index in dimension_indices):
-            raise ValueError("Dimension index out of range.")
-        # 创建一个场景画布
-        canvas = scene.SceneCanvas(keys="interactive", show=True, bgcolor="white")
-        view = canvas.central_widget.add_view()
-        view.camera = "turntable"  # 设置相机类型
-        # 创建散点
-        scatter = visuals.Markers()
-        points = np.array([point.coordinates for point in self.points.values()])
-        scatter.set_data(points[:, dimension_indices], face_color="red", size=10)
-        # 在每个点上显示名称
-        for point in self.points.values():
-            text = visuals.Text(
-                text=point.name,
-                color="black",
-                anchor_x="left",
-                anchor_y="bottom",
-                font_size=10,
-            )
-            text.pos = (
-                point.coordinates[dimension_indices[0]],
-                point.coordinates[dimension_indices[1]],
-                point.coordinates[dimension_indices[2]],
-            )
-            view.add(text)
-        view.add(scatter)
-        # 添加坐标轴
-        axis = visuals.XYZAxis(parent=view.scene)
-        # 显示原点
-        origin = visuals.Markers()
-        origin.set_data(np.array([[0, 0, 0]]), face_color="blue", size=10)
-        view.add(origin)
-        # 为坐标轴添加标签
-        axis_labels = {
-            self.dimensions[dimension_indices[0]].name: (1, 0, 0),
-            self.dimensions[dimension_indices[1]].name: (0, 1, 0),
-            self.dimensions[dimension_indices[2]].name: (0, 0, 1),
-        }
-        for label, pos in axis_labels.items():
-            text = visuals.Text(
-                text=label,
-                color="black",
-                anchor_x="center",
-                anchor_y="center",
-                font_size=15,
-                bold=True,
-            )
-            text.pos = np.array(pos) * 1.1  # 让标签稍微远离原点
-            view.add(text)
-        canvas.app.run()
-
     def to_json(self, filepath):
         data = {
             "dimensions": [dim.to_dict() for dim in self.dimensions],
@@ -386,5 +252,73 @@ class VectorSpace:
             vector_space.add_point(point)
         return vector_space
 
+    @staticmethod
+    def minmax(coords):
+        scaler = MinMaxScaler()
+        return scaler.fit_transform(coords)
+
+    @staticmethod
+    def zscore(coords):
+        scaler = StandardScaler()
+        return scaler.fit_transform(coords)
+
+    @staticmethod
+    def robust(coords):
+        scaler = RobustScaler()
+        return scaler.fit_transform(coords)
+
+    @staticmethod
+    def from_csv(
+        filepath,
+        dimension_indices,
+        name_index=None,
+        id_index=None,
+        label_indices=None,
+        delimiter=",",
+    ):
+        """
+        Create a VectorSpace from a CSV file.
+        Parameters:
+        filepath (str): Path to the CSV file.
+        dimension_indices (list of int): Indices of the columns to be used as dimensions.
+        name_index (int): Index of the column to be used as point names. If None, names will be autogenerated.
+        id_index (int): Index of the column to be used as point IDs. If None, IDs will be autogenerated.
+        label_indices (list of int): Indices of the columns to be used as point labels. Default is None.
+        delimiter (str): The delimiter of the CSV file. Default is ','.
+        Returns:
+        VectorSpace: The created VectorSpace instance.
+        """
+        with open(filepath, "r") as file:
+            reader = csv.reader(file, delimiter=delimiter)
+            header = next(reader)
+            dimensions = [
+                Dimension(name=header[i], weight=1.0) for i in dimension_indices
+            ]
+            data = list(reader)
+            # Extract and normalize coordinates in dimension_indices
+            coords = np.array(
+                [[float(row[i]) for i in dimension_indices] for row in data]
+            )
+            normalized_coords = VectorSpace.minmax(coords)
+            # normalized_coords = VectorSpace.zscore(coords)
+            # normalized_coords = VectorSpace.robust(coords)
+            vector_space = VectorSpace(dimensions)
+            for i, row in enumerate(data):
+                coordinates = normalized_coords[i].tolist()
+                name = row[name_index] if name_index is not None else None
+                id = row[id_index] if id_index is not None else None
+                # Extract labels
+                labels = {}
+                if label_indices is not None:
+                    for index in label_indices:
+                        labels[header[index]] = row[index]
+                point = Point(id=id, name=name, coordinates=coordinates, labels=labels)
+                vector_space.add_point(point)
+        return vector_space
+
     def __repr__(self):
         return f"VectorSpace(dimensions={self.dimensions}, points={list(self.points.values())})"
+
+
+if __name__ == "__main__":
+    print("vectorspace.py")

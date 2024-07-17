@@ -3,8 +3,8 @@ import uuid
 
 
 class Point:
-    def __init__(self, name=None, coordinates=None, labels={}):
-        self.id = self.generate_unique_id()
+    def __init__(self, id=None, name=None, coordinates=None, labels={}):
+        self.id = id if id else self.generate_unique_id()
         self.name = name if name else f"Point_{self.id}"
         self.coordinates = coordinates if coordinates else []
         self.length = self.calculate_length()
