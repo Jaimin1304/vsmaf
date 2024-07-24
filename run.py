@@ -5,9 +5,24 @@ from models.vectorspace import VectorSpace
 print("----- run -----")
 filepath = "nodes.csv"
 dimension_indices = [5, 6, 8]
-name_index = 2
+name_index = 9
 id_index = 0
-vector_space = VectorSpace.from_csv(filepath, dimension_indices, name_index, id_index)
+label_indices = None
+delimiter = ","
+scaling_methods = {
+    0: "minmax_invert",
+    1: "minmax",
+    2: "minmax",
+}
+vector_space = VectorSpace.from_csv(
+    filepath,
+    dimension_indices,
+    name_index,
+    id_index,
+    label_indices,
+    delimiter,
+    scaling_methods,
+)
 
 # Perform PCA
 pca_result = vector_space.pca_transform(n_components=2, return_space=True)

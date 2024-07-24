@@ -86,13 +86,6 @@ def visualize_3d(vector_space, dimension_indices=None):
 def visualize_3d_vispy(
     vector_space, dimension_indices=None, cluster_key="kmeans_clusters"
 ):
-    """
-    Visualize the points in 3D space using the specified dimensions with GPU acceleration.
-    Parameters:
-    vector_space (VectorSpace): The VectorSpace instance to visualize.
-    dimension_indices (list of int): Indices of the dimensions to visualize. Default is the first three dimensions.
-    cluster_key (str): The key in the labels to determine the cluster of each point. Default is 'kmeans_clusters'.
-    """
     if dimension_indices is None:
         dimension_indices = [0, 1, 2]
     if len(dimension_indices) != 3:
@@ -110,6 +103,10 @@ def visualize_3d_vispy(
     point_lst = list(vector_space.points.values())
     points = np.array([point.coordinates for point in point_lst])
 
+    # 计算质心
+    centroid = points[:, dimension_indices].mean(axis=0)
+    view.camera.center = centroid  # 设置相机旋转中心为质心
+
     # 生成颜色字典，每个类一个颜色
     color_map = defaultdict(lambda: np.random.rand(3))
 
@@ -122,7 +119,7 @@ def visualize_3d_vispy(
     )
 
     scatter.set_data(
-        points[:, dimension_indices], edge_color=colors, face_color=colors, size=10
+        points[:, dimension_indices], edge_color=colors, face_color=colors, size=16
     )
     view.add(scatter)
 
@@ -134,7 +131,7 @@ def visualize_3d_vispy(
 
     # 显示原点
     origin = visuals.Markers()
-    origin.set_data(np.array([[0, 0, 0]]), face_color="blue", size=16)
+    origin.set_data(np.array([[0, 0, 0]]), face_color="blue", size=18)
     view.add(origin)
 
     # 为坐标轴添加标签
@@ -149,7 +146,7 @@ def visualize_3d_vispy(
             color="black",
             anchor_x="center",
             anchor_y="center",
-            font_size=20,
+            font_size=36,
             bold=True,
         )
         text.pos = np.array(pos) * 1.1  # 让标签稍微远离原点
@@ -158,11 +155,11 @@ def visualize_3d_vispy(
     # 在每个点旁边显示文本标签并稍微向上移动
     for i, point in enumerate(points[:, dimension_indices]):
         point_label = visuals.Text(
-            text=point_lst[i].id,
+            text=f"{point_lst[i].id} - {point_lst[i].name}",
             color=colors[i],
             anchor_x="center",
             anchor_y="center",
-            font_size=10,
+            font_size=8,
             bold=True,
         )
         point_label.pos = point + np.array([0, 0.01, 0])  # 向上移动一点
