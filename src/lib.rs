@@ -3,6 +3,7 @@ mod point;
 mod vectorspace;
 
 pub use dimension::Dimension;
+pub use point::Point;
 pub use vectorspace::VectorSpace;
 
 #[cfg(test)]
