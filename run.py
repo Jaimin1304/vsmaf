@@ -3,16 +3,16 @@ from visualizer import visualize_2d, visualize_3d, visualize_3d_vispy
 from models.vectorspace import VectorSpace
 
 print("----- run -----")
-filepath = "nodes.csv"
+filepath = "workernodes.csv"
 dimension_indices = [5, 6, 8]
 name_index = 9
 id_index = 0
 label_indices = None
 delimiter = ","
 scaling_methods = {
-    0: "minmax_invert",
-    1: "minmax",
-    2: "minmax",
+    0: "zscore_invert",
+    1: "zscore",
+    2: "zscore",
 }
 vector_space = VectorSpace.from_csv(
     filepath,
@@ -46,8 +46,19 @@ n_clusters = 5
 kmeans_labels = vector_space.perform_kmeans(n_clusters)
 print(f"K-means clustering result with {n_clusters} clusters: {kmeans_labels}")
 
+scaling_methods = {
+    0: "minmax",
+    1: "minmax",
+    2: "minmax",
+}
+vector_space.normalize_vectorspace(scaling_methods)
+
 # 可视化 3D
 visualize_3d_vispy(vector_space)
+
+# visualize_2d(pca_result)
+# restored_vector_space = VectorSpace.from_json("result.json")
+# visualize_2d(restored_vector_space)
 
 # Perform DBSCAN clustering
 eps = 1.0
