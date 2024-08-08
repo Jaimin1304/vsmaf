@@ -2,9 +2,10 @@
 
 **Vsmaf** is a vector-space-based framework designed for matching algorithms. Here's a range of features it mainly supports:
 
+* **Data Vectorization** : Transforming Data into Point Sets in a High-Dimensional Vector Space.
 * **Dimensionality Reduction** : Supports techniques to reduce the dimensions of high-dimensional data to make it more manageable and interpretable.
-* **2D/3D Visualization** : Provides tools for visualizing multidimensional vector spaces in two or three dimensions, aiding in the understanding of the data's structure.
 * **Sorting, Filtering, and Clustering** : Allows for operations such as sorting, filtering, and clustering of points within a multidimensional vector space.
+* **2D/3D Visualization** : Provides tools for visualizing multidimensional vector spaces in two or three dimensions, aiding in the understanding of the data's structure.
 
 ## Purpose and Use Case
 
